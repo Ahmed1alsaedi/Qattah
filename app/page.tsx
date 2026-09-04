@@ -114,7 +114,9 @@ export default function Home() {
               <Label className="text-base font-bold" htmlFor="member-select">اسمك</Label>
               <Select value={member} onValueChange={setMember}>
                 <SelectTrigger id="member-select" className="h-14 w-full rounded-2xl px-4 text-base" aria-label="اختر اسمك">
-                  <SelectValue placeholder="اختر اسمك من القائمة" />
+                  <SelectValue placeholder="اختر اسمك من القائمة">
+                    {(value) => members.find((item) => String(item.id) === value)?.name ?? 'اختر اسمك من القائمة'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent align="start" className="max-h-72 rounded-2xl">
                   {members.map((item) => <SelectItem key={item.id} value={String(item.id)} className="min-h-11 text-base">{item.name}</SelectItem>)}
