@@ -1,8 +1,8 @@
 'use client';
 
-import { SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Eye, LogOut, Plus, RotateCcw, Settings2, Trash2, UsersRound, XCircle } from 'lucide-react';
+import { Banknote, CheckCircle2, Eye, LogOut, Plus, RotateCcw, Settings2, Trash2, UsersRound, WalletCards, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type Member = { id: number; name: string; paymentId: number | null; receiptType: string | null; submittedAt: string | null };
-type Dashboard = { amount: number; cycleLabel: string; paidCount: number; unpaidCount: number; members: Member[] };
+type Dashboard = {
+  amount: number;
+  cycleLabel: string;
+  paidCount: number;
+  unpaidCount: number;
+  totalAmount: number;
+  receivedAmount: number;
+  remainingAmount: number;
+  members: Member[];
+};
 
 export default function AdminDashboard() {
   const [data, setData] = useState<Dashboard | null>(null);
@@ -75,6 +84,12 @@ export default function AdminDashboard() {
         </header>
 
         {error && <Alert variant="destructive" className="mb-5"><AlertDescription>{error}</AlertDescription></Alert>}
+
+        <section className="mb-3 grid gap-3 sm:grid-cols-3">
+          <MoneyStat label="إجمالي القطّة" value={data.totalAmount} icon={<WalletCards />} />
+          <MoneyStat label="المستلم حتى الآن" value={data.receivedAmount} icon={<CheckCircle2 />} tone="success" />
+          <MoneyStat label="المتبقي" value={data.remainingAmount} icon={<Banknote />} tone="danger" />
+        </section>
 
         <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="المبلغ" value={`${data.amount} ر.س`} tone="neutral" />
@@ -143,4 +158,18 @@ export default function AdminDashboard() {
 function Stat({ label, value, tone }: { label: string; value: string; tone: 'neutral' | 'success' | 'danger' }) {
   const color = tone === 'success' ? 'text-emerald-700' : tone === 'danger' ? 'text-red-600' : 'text-foreground';
   return <Card className="gap-1 rounded-2xl px-4 py-4"><span className="text-sm font-semibold text-muted-foreground">{label}</span><strong className={`text-2xl font-black ${color}`}>{value}</strong></Card>;
+}
+
+function MoneyStat({ label, value, icon, tone = 'neutral' }: { label: string; value: number; icon: ReactNode; tone?: 'neutral' | 'success' | 'danger' }) {
+  const color = tone === 'success' ? 'text-emerald-700' : tone === 'danger' ? 'text-red-600' : 'text-primary';
+  return (
+    <Card className="rounded-2xl px-5 py-5">
+      <div className={`mb-3 flex size-10 items-center justify-center rounded-xl bg-secondary [&_svg]:size-5 ${color}`}>{icon}</div>
+      <span className="text-sm font-semibold text-muted-foreground">{label}</span>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <strong className={`text-3xl font-black ${color}`}>{value.toLocaleString('ar-SA')}</strong>
+        <span className="text-sm font-bold text-muted-foreground">ر.س</span>
+      </div>
+    </Card>
+  );
 }

@@ -15,5 +15,16 @@ export async function GET() {
     ORDER BY m.id
   `).bind(settings.cycleNumber).all<{ id: number; name: string; paymentId: number | null; receiptType: string | null; submittedAt: string | null }>();
   const paidCount = members.results.filter((member) => member.paymentId !== null).length;
-  return Response.json({ ...settings, members: members.results, paidCount, unpaidCount: members.results.length - paidCount });
+  const unpaidCount = members.results.length - paidCount;
+  const totalAmount = settings.amount * members.results.length;
+  const receivedAmount = settings.amount * paidCount;
+  return Response.json({
+    ...settings,
+    members: members.results,
+    paidCount,
+    unpaidCount,
+    totalAmount,
+    receivedAmount,
+    remainingAmount: totalAmount - receivedAmount,
+  });
 }
