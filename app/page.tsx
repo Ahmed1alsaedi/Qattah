@@ -2,7 +2,7 @@
 
 import { SyntheticEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, CheckCircle2, FileUp, ShieldCheck, WalletCards } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CircleDashed, FileUp, ShieldCheck, Users, WalletCards } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-type Member = { id: number; name: string };
+type Member = { id: number; name: string; paid: boolean };
 
 export default function Home() {
   const [member, setMember] = useState<string | null>(null);
@@ -26,6 +26,8 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const availableMembers = members.filter((item) => !item.paid);
+  const paidCount = members.length - availableMembers.length;
 
   useEffect(() => {
     fetch('/api/site')
@@ -59,6 +61,7 @@ export default function Home() {
       }
       if (!response.ok) throw new Error(result.error || 'تعذر حفظ التحويل.');
       setMessage({ type: 'success', text: 'تم استلام تحويلك بنجاح ✅' });
+      setMembers((current) => current.map((item) => String(item.id) === member ? { ...item, paid: true } : item));
       setMember(null);
       setReceipt(null);
     } catch (error) {
@@ -115,13 +118,16 @@ export default function Home() {
               <Select value={member} onValueChange={setMember}>
                 <SelectTrigger id="member-select" className="h-14 w-full rounded-2xl px-4 text-base" aria-label="اختر اسمك">
                   <SelectValue placeholder="اختر اسمك من القائمة">
-                    {(value) => members.find((item) => String(item.id) === value)?.name ?? 'اختر اسمك من القائمة'}
+                    {(value) => availableMembers.find((item) => String(item.id) === value)?.name ?? 'اختر اسمك من القائمة'}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent align="start" className="max-h-72 rounded-2xl">
-                  {members.map((item) => <SelectItem key={item.id} value={String(item.id)} className="min-h-11 text-base">{item.name}</SelectItem>)}
+                  {availableMembers.map((item) => <SelectItem key={item.id} value={String(item.id)} className="min-h-11 text-base">{item.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {!loading && availableMembers.length === 0 && (
+                <p className="text-sm font-semibold text-emerald-700">الجميع سجّلوا تحويلهم ✅</p>
+              )}
             </div>
 
             <div className="space-y-2.5">
@@ -152,7 +158,32 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <p className="mt-5 text-center text-sm leading-6 text-muted-foreground">بيانات التحويل تظهر للمسؤول فقط.</p>
+        <Card className="mt-5 rounded-3xl bg-card/95 py-6 shadow-[0_18px_60px_-32px_rgba(16,65,62,0.35)] backdrop-blur">
+          <CardHeader className="gap-2 px-6">
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2 text-xl font-extrabold">
+                <Users className="size-5 text-primary" aria-hidden="true" />
+                حالة التحويل
+              </CardTitle>
+              <span className="rounded-full bg-secondary px-3 py-1 text-sm font-bold">{paidCount} من {members.length}</span>
+            </div>
+            <CardDescription className="text-base">يمكن للجميع معرفة من حوّل ومن لم يحوّل.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-background/60">
+              {members.map((item) => (
+                <div key={item.id} className="flex min-h-13 items-center justify-between gap-3 px-4 py-3">
+                  <span className="font-bold">{item.name}</span>
+                  <span className={item.paid ? 'inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700' : 'inline-flex items-center gap-1.5 text-sm font-bold text-muted-foreground'}>
+                    {item.paid ? <CheckCircle2 className="size-4" aria-hidden="true" /> : <CircleDashed className="size-4" aria-hidden="true" />}
+                    {item.paid ? 'تم التحويل' : 'لم يحوّل'}
+                  </span>
+                </div>
+              ))}
+              {!loading && members.length === 0 && <p className="p-4 text-center text-muted-foreground">لا يوجد أعضاء حاليًا.</p>}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <AlertDialog open={duplicateOpen} onOpenChange={setDuplicateOpen}>

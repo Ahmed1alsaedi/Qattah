@@ -25,7 +25,19 @@ export async function getPublicSiteData() {
   await ensureInitialData(db);
   const [settings, members] = await Promise.all([
     db.prepare('SELECT amount, cycle_label AS cycleLabel FROM settings WHERE id = 1').first<{ amount: number; cycleLabel: string }>(),
-    db.prepare('SELECT id, name FROM members WHERE active = 1 ORDER BY id').all<{ id: number; name: string }>(),
+    db.prepare(`
+      SELECT m.id, m.name, CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS paid
+      FROM members m
+      LEFT JOIN payments p
+        ON p.member_id = m.id
+        AND p.cycle_number = (SELECT cycle_number FROM settings WHERE id = 1)
+      WHERE m.active = 1
+      ORDER BY m.id
+    `).all<{ id: number; name: string; paid: number }>(),
   ]);
-  return { amount: settings?.amount ?? 170, cycleLabel: settings?.cycleLabel ?? 'سبتمبر 2026', members: members.results };
+  return {
+    amount: settings?.amount ?? 170,
+    cycleLabel: settings?.cycleLabel ?? 'سبتمبر 2026',
+    members: members.results.map((member) => ({ ...member, paid: member.paid === 1 })),
+  };
 }
